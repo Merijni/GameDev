@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hack Attack</title>
+  <style>
+    :root {
+      --bg: #0b1020;          /* diepe nachtblauw */
+      --panel: #0e1730;       /* iets lichter voor panel */
+      --cyan: #27e0ff;        /* neon-cyaan */
+      --green: #28ff76;       /* neon-groen */
+      --text: #e8f3ff;        /* lichte tekst */
+      --muted: #8aa0c2;       /* secundaire tekst */
+      --line: #1f2b4d;        /* subtiele randlijn */
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 50% 20%, #0f1b3a 0%, var(--bg) 50%, #050814 100%);
+      display: grid;
+      place-items: center;
+    }
+
+    .frame {
+      width: min(92vw, 360px);
+      padding: 28px 26px 30px;
+      background: linear-gradient(180deg, rgba(19,32,66,.65), rgba(10,16,34,.85));
+      border-radius: 16px;
+      position: relative;
+      box-shadow:
+        0 0 0 1px rgba(39,224,255,.18) inset,
+        0 0 35px rgba(39,224,255,.15);
+    }
+
+    /* Neon outline like in the mock */
+    .frame::before {
+      content: "";
+      position: absolute; inset: -10px;
+      border-radius: 20px;
+      background:
+        linear-gradient(90deg, transparent, rgba(39,224,255,.25), transparent) top/100% 2px no-repeat,
+        linear-gradient(90deg, transparent, rgba(39,224,255,.25), transparent) bottom/100% 2px no-repeat,
+        linear-gradient(180deg, transparent, rgba(39,224,255,.18), transparent) left/2px 100% no-repeat,
+        linear-gradient(180deg, transparent, rgba(39,224,255,.18), transparent) right/2px 100% no-repeat;
+      filter: drop-shadow(0 0 18px rgba(39,224,255,.35));
+      pointer-events: none;
+    }
+
+    .title {
+      text-align: center;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin: 2px 0 18px;
+      font-size: 28px;
+      color: var(--cyan);
+      text-shadow: 0 0 14px rgba(39,224,255,.7), 0 0 30px rgba(39,224,255,.35);
+    }
+
+    .input-row {
+      display: grid;
+      gap: 12px;
+      margin: 6px 0 8px;
+      place-items: center;
+    }
+
+    .name-input {
+      width: 78%;
+      border: 1px solid var(--line);
+      background: rgba(11,17,34,.65);
+      color: var(--text);
+      border-radius: 9px;
+      height: 40px;
+      padding: 0 14px;
+      outline: none;
+      box-shadow: inset 0 0 0 1px rgba(39,224,255,.08);
+      transition: box-shadow .2s, border-color .2s;
+    }
+    .name-input::placeholder{ color: #7ea0be; }
+    .name-input:focus {
+      border-color: rgba(39,224,255,.55);
+      box-shadow: 0 0 0 3px rgba(39,224,255,.18), inset 0 0 0 1px rgba(39,224,255,.12);
+    }
+
+    .btn {
+      display: inline-grid;
+      place-items: center;
+      height: 46px; min-width: 120px;
+      padding: 0 22px;
+      font-weight: 700; letter-spacing: .3px;
+      color: #001b0a;
+      background: radial-gradient(120% 160% at 50% -10%, #76ffc1, var(--green));
+      border: none; border-radius: 12px;
+      cursor: pointer;
+      box-shadow:
+        0 8px 22px rgba(40,255,118,.25),
+        0 0 18px rgba(40,255,118,.35) inset;
+      transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .btn:hover { filter: saturate(110%); box-shadow: 0 10px 26px rgba(40,255,118,.35), 0 0 22px rgba(40,255,118,.45) inset; }
+    .btn:active { transform: translateY(1px) scale(.99); }
+
+    .leaderboard {
+      margin-top: 18px;
+      padding: 14px 14px 10px;
+      background: linear-gradient(180deg, rgba(10,18,38,.7), rgba(7,12,26,.8));
+      border-radius: 12px;
+      border: 1px solid rgba(39,224,255,.2);
+      box-shadow: 0 0 18px rgba(39,224,255,.12) inset;
+    }
+
+    .leaderboard h2 {
+      margin: 0 0 10px;
+      text-align: center;
+      font-size: 16px;
+      color: var(--green);
+      text-shadow: 0 0 12px rgba(40,255,118,.6);
+    }
+
+    .rows { display: grid; gap: 8px; }
+
+    .row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 8px;
+      border: 1px solid rgba(39,224,255,.16);
+      border-radius: 8px;
+      background: rgba(8,14,30,.55);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .row .name { color: #bcd3ff; }
+    .row .score { color: #dfffee; }
+
+    /* kleine glorie rand rond het geheel */
+    .glow { position: absolute; inset: -40px; filter: blur(40px); opacity: .35; pointer-events: none; }
+    .glow::before { content:""; position:absolute; inset: 0; background: radial-gradient(400px 200px at 50% 0%, rgba(39,224,255,.35), transparent 70%); }
+  </style>
+</head>
+<body>
+  <div class="frame" role="region" aria-label="Hack Attack paneel">
+    <div class="glow"></div>
+    <h1 class="title">HACK ATTACK</h1>
+
+    <div class="input-row">
+      <input class="name-input" type="text" placeholder="Vul je naam in" aria-label="Naam invoerveld" />
+      <button class="btn" type="button" id="playBtn">Play</button>
+    </div>
+
+    <section class="leaderboard" aria-label="Leaderboard">
+      <h2>Leaderboard</h2>
+      <div class="rows" role="list">
+        <div class="row" role="listitem"><span class="name">Merijn</span><span class="score">120</span></div>
+        <div class="row" role="listitem"><span class="name">Lotte</span><span class="score">90</span></div>
+        <div class="row" role="listitem"><span class="name">Sam</span><span class="score">75</span></div>
+      </div>
+    </section>
+  </div>
+<script>
+  document.getElementById('playBtn').addEventListener('click', function() {
+    window.location.href = 'play.html';
+  });
+</script>
+</body>
+</html>
