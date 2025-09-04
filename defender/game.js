@@ -2,12 +2,18 @@ class MainScene extends Phaser.Scene {
     // hier worden alle plaatjes voor geladen
     preload() {
         this.load.image('firewall', 'assets/firewall.png');
+        this.load.image('bullet', 'assets/kogel.png');
+
     }
 
     create() {
+        this.keys = this.input.keyboard.addKeys('W,A,D,SPACE');
         this.createPlayer();
-        this.keyConfig();
+        this.createBullets();
         this.cursors = this.input.keyboard.createCursorKeys(); // pijltjestoetsen
+
+
+        this.remove();
     }
 
     update() {
@@ -21,19 +27,35 @@ class MainScene extends Phaser.Scene {
             this.player.setVelocityX(0);
         }
 
+        if (this.keys && this.keys.SPACE && Phaser.Input.Keyboard.JustDown(this.keys.SPACE)) {
+            this.shoot();
+        }
+
         this.player.y = this.sys.game.config.height - 100;
     }
 
-    // hier worden de toetsen toegevoegd dat je ook met A & D kan bewegen en dadelijk ook met W kan schieten
-    keyConfig() {
-        // WASD apart toevoegen
-        this.keys = this.input.keyboard.addKeys({
-            W: Phaser.Input.Keyboard.KeyCodes.W,
-            A: Phaser.Input.Keyboard.KeyCodes.A,
-            D: Phaser.Input.Keyboard.KeyCodes.D
-        });
+
+    shoot() {
+        const bullet = this.bullets.get(this.player.x, this.player.y - 20, 'bullet'); // key hier meegeven mag ook
+        if (!bullet) return;
+
+        bullet.setActive(true).setVisible(true);
+        bullet.body.setAllowGravity(false);
+        bullet.setVelocityY(-300);
+
+        bullet.setScale(0.05);
+        // hier draai ik de kogel dat hij naar boven wijst
+        bullet.setAngle(270);
+
+        bullet.body.onWorldBounds = true;
     }
 
+    // hier maakt hij de kogels aan
+    createBullets() {
+        this.bullets = this.physics.add.group({
+            defaultKey: 'bullet',
+        });
+    }
 
     // hier maakt hij de speler aan
     createPlayer() {
@@ -45,6 +67,16 @@ class MainScene extends Phaser.Scene {
         this.player = this.physics.add.sprite(gameWidth * 0.5, gameHeight - 100, 'firewall').setScale(0.1);
         // mag niet buiten het scherm bewegen
         this.player.setCollideWorldBounds(true);
+    }
+
+    remove() {
+        this.physics.world.on('worldbounds', (body) => {
+            const go = body.gameObject;
+            if (go && go.texture && go.texture.key === 'bullet') {
+                this.bullets.killAndHide(go); // terug in de pool
+                body.enable = false;          // physics uit
+            }
+        });
     }
 }
 
