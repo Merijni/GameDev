@@ -1,20 +1,73 @@
+import Virus from './virus.js';
+
+// Mapping van virus types naar texture keys
+const TEX_BY_TYPE = {
+    red: 'virus_red',
+    blue: 'virus_blue',
+    green: 'virus_green',
+    purple: 'virus_purple'
+};
+
 class MainScene extends Phaser.Scene {
     // hier worden alle plaatjes voor geladen
+
     preload() {
         this.load.image('firewall', 'assets/firewall.png');
         this.load.image('bullet', 'assets/kogel.png');
-
+        this.load.image('virus_red', 'assets/virus_red.png');
+        this.load.image('virus_blue', 'assets/virus_blue.png');
+        this.load.image('virus_green', 'assets/virus_green.png');
+        this.load.image('virus_purple', 'assets/virus_purple.png');
     }
 
     create() {
         this.keys = this.input.keyboard.addKeys('W,A,D,SPACE');
         this.createPlayer();
         this.createBullets();
-        this.cursors = this.input.keyboard.createCursorKeys(); // pijltjestoetsen
 
+        this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.remove();
+        this.viruses = this.physics.add.group({ runChildUpdate: true });
+
+        this.cursors = this.input.keyboard.createCursorKeys();
+
+        // — Grid wave (2 rijen x 6 kolommen) —
+        this.spawnWaveGrid(['red', 'blue', 'green', 'purple'], {
+            rows: 2, cols: 6,
+            startX: 90, startY: -60, // boven beeld spawnen
+            gapX: 110, gapY: 80
+        });
     }
+
+    // A) Spawn in een grid
+    spawnWaveGrid(types, { rows, cols, startX, startY, gapX, gapY }) {
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                const type = types[(r * cols + c) % types.length];
+                const x = startX + c * gapX;
+                const y = startY + r * gapY;
+                const v = new Virus(this, x, y, TEX_BY_TYPE[type] || 'virus_red', type);
+                this.viruses.add(v);
+            }
+        }
+    }
+
+    // B) Spawn één voor één met interval (wave “stroomt” in)
+    spawnWaveTimed(types, { count, delay, startX, startY, gapX }) {
+        let i = 0;
+        this.time.addEvent({
+            delay,
+            repeat: count - 1,
+            callback: () => {
+                const type = types[i % types.length];
+                const x = startX + (i % Math.ceil(count / 2)) * gapX; // simpele spreiding
+                const v = new Virus(this, x, startY, TEX_BY_TYPE[type] || 'virus_red', type);
+                this.viruses.add(v);
+                i++;
+            }
+        });
+    }
+
 
     update() {
         this.player.setVelocityY(0);
