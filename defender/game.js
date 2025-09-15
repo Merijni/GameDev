@@ -10,7 +10,6 @@ const TEX_BY_TYPE = {
 
 class MainScene extends Phaser.Scene {
     // hier worden alle plaatjes voor geladen
-
     preload() {
         this.load.image('firewall', 'assets/firewall.png');
         this.load.image('bullet', 'assets/kogel.png');
@@ -28,8 +27,6 @@ class MainScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.viruses = this.physics.add.group({ runChildUpdate: true });
-
-        this.cursors = this.input.keyboard.createCursorKeys();
 
         // als een kogel de virus raakt dan de onBulletHitsVirus functie aanroepen
         this.physics.add.overlap(
@@ -82,7 +79,8 @@ class MainScene extends Phaser.Scene {
             callback: () => this.levelUp()
         });
 
-
+        // ✅ HIER de game-over guard zetten
+        this.gameOver = false;
     }
 
     spawnRandomVirus(types) {
@@ -95,7 +93,6 @@ class MainScene extends Phaser.Scene {
 
         this.viruses.add(v);
     }
-
 
     levelUp() {
         this.level += 1;
@@ -125,8 +122,6 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-
-
     onBulletHitsVirus(bullet, virus) {
         if (bullet.body) {
             bullet.disableBody(true, true);
@@ -142,11 +137,9 @@ class MainScene extends Phaser.Scene {
 
         // score bijhouden
         this.score += 10;
-        this.scoreText.setText('Score: ' + this.score);;
+        this.scoreText.setText('Score: ' + this.score);
         // this.sound.play('hit_sfx');
     }
-
-
 
     update() {
         this.player.setVelocityY(0);
@@ -167,24 +160,33 @@ class MainScene extends Phaser.Scene {
 
         // check of een virus onderaan het scherm is gekomen
         this.viruses.children.iterate((virus) => {
-            if (virus.active && virus.y > this.sys.game.config.height) {
+            if (virus && virus.active && virus.y > this.sys.game.config.height) {
                 virus.disableBody(true, true);
                 this.loseLife();
             }
         });
     }
 
-
+    // ✅ HIER je aangepaste loseLife met redirect naar index.html
     loseLife() {
         this.lives -= 1;
         this.livesText.setText('Lives: ' + this.lives);
 
-        // als je geen levens meer hebt, herstart de scene
-        if (this.lives <= 0) {
-            this.scene.restart();
+        if (this.lives <= 0 && !this.gameOver) {
+            this.gameOver = true;               // voorkomt dubbele submits
+            this.physics.pause();               // alles stilzetten
+            this.spawnTimer?.remove();          // timer stoppen (als hij bestaat)
+
+            const name = localStorage.getItem('player_name') || 'Anon';
+            submitScore(name, this.score);      // fire-and-forget
+
+            // kleine delay voor UX en om het request te laten vertrekken
+            this.time.delayedCall(400, () => {
+                this.scene.stop();
+                window.location.href = 'index.html'; // terug naar startscherm
+            });
         }
     }
-
 
     // hier zorgt hij dat een kogel wordt afgevuurd
     shoot() {
@@ -213,8 +215,6 @@ class MainScene extends Phaser.Scene {
         bullet.body.onWorldBounds = true;
     }
 
-
-
     // hier maakt hij de kogels aan
     createBullets() {
         this.bullets = this.physics.add.group({
@@ -233,7 +233,6 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-
     // hier maakt hij de speler aan
     createPlayer() {
         const gameHeight = this.sys.game.config.height;
@@ -241,7 +240,6 @@ class MainScene extends Phaser.Scene {
         this.player = this.physics.add.sprite(gameWidth * 0.5, gameHeight - 100, 'firewall').setScale(0.1);
         this.player.setCollideWorldBounds(true);
     }
-
 }
 
 const config = {

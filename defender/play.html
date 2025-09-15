@@ -11,5 +11,22 @@
   <!-- JOUW game als module (belangrijk!) -->
   <script type="module" src="game.js"></script>
 </head>
-<body></body>
+<body>
+  <script>async function submitScore(name, score) {
+  const payload = {
+    name: (name || 'Anon').slice(0, 24),
+    score: Math.max(0, score|0),
+  };
+  try {
+    await fetch('/scores.php', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    console.error('Score submit failed:', e);
+  }
+}
+</script>
+</body>
 </html>
