@@ -31,42 +31,121 @@ class MainScene extends Phaser.Scene {
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // — Grid wave (2 rijen x 6 kolommen) —
-        this.spawnWaveGrid(['red', 'blue', 'green', 'purple'], {
-            rows: 2, cols: 6,
-            startX: 90, startY: -60, // boven beeld spawnen
-            gapX: 110, gapY: 80
+        // als een kogel de virus raakt dan de onBulletHitsVirus functie aanroepen
+        this.physics.add.overlap(
+            this.bullets,
+            this.viruses,
+            this.onBulletHitsVirus,
+            null,
+            this
+        );
+
+        // leven en score
+        this.lives = 3;
+        this.livesText = this.add.text(650, 16, 'Lives: ' + this.lives, {
+            fontSize: '24px',
+            fill: '#fff'
         });
-    }
 
-    // A) Spawn in een grid
-    spawnWaveGrid(types, { rows, cols, startX, startY, gapX, gapY }) {
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                const type = types[(r * cols + c) % types.length];
-                const x = startX + c * gapX;
-                const y = startY + r * gapY;
-                const v = new Virus(this, x, y, TEX_BY_TYPE[type] || 'virus_red', type);
-                this.viruses.add(v);
-            }
-        }
-    }
+        this.score = 0;
+        this.scoreText = this.add.text(16, 16, 'Score: 0', {
+            fontSize: '24px',
+            fill: '#fff'
+        });
 
-    // B) Spawn één voor één met interval (wave “stroomt” in)
-    spawnWaveTimed(types, { count, delay, startX, startY, gapX }) {
-        let i = 0;
-        this.time.addEvent({
-            delay,
-            repeat: count - 1,
+        // --- difficulty controls ---
+        this.level = 1;           // voor info/gevoel
+        this.difficulty = 1;      // multiplier voor virus-snelheid
+        this.spawnDelay = 1500;   // start rustig
+        this.spawnBurst = 1;      // hoeveel virussen per tick
+
+        // (optioneel) level HUD
+        this.levelText = this.add.text(350, 16, 'Level: ' + this.level, {
+            fontSize: '24px', fill: '#fff'
+        });
+
+        // Spawn timer, bewaar de reference zodat we 'm kunnen aanpassen
+        this.spawnTimer = this.time.addEvent({
+            delay: this.spawnDelay,
+            loop: true,
             callback: () => {
-                const type = types[i % types.length];
-                const x = startX + (i % Math.ceil(count / 2)) * gapX; // simpele spreiding
-                const v = new Virus(this, x, startY, TEX_BY_TYPE[type] || 'virus_red', type);
-                this.viruses.add(v);
-                i++;
+                for (let i = 0; i < this.spawnBurst; i++) {
+                    this.spawnRandomVirus(['red', 'blue', 'green', 'purple']);
+                }
+            }
+        });
+
+        // Elke 15s een tikje moeilijker (kan ook score-based, zie onder)
+        this.time.addEvent({
+            delay: 15000,
+            loop: true,
+            callback: () => this.levelUp()
+        });
+
+
+    }
+
+    spawnRandomVirus(types) {
+        const x = Phaser.Math.Between(50, this.sys.game.config.width - 50);
+        const y = -50;
+        const type = Phaser.Utils.Array.GetRandom(types);
+
+        const v = new Virus(this, x, y, TEX_BY_TYPE[type] || 'virus_red', type)
+            .setSpeedMultiplier(this.difficulty);
+
+        this.viruses.add(v);
+    }
+
+
+    levelUp() {
+        this.level += 1;
+        if (this.levelText) this.levelText.setText('Level: ' + this.level);
+
+        // 1) virussen sneller laten bewegen (via multiplier op Virus)
+        this.difficulty = Math.min(3.0, this.difficulty + 0.2); // cap 3x
+
+        // 2) af en toe méér tegelijk spawnen
+        if (this.level % 2 === 0) {
+            this.spawnBurst = Math.min(4, this.spawnBurst + 1); // max 4 tegelijk
+        }
+
+        // 3) spawns vaker laten komen (delay -10%, tot min 500ms)
+        this.spawnDelay = Math.max(500, Math.floor(this.spawnDelay * 0.9));
+
+        // timer herstarten met nieuwe delay
+        this.spawnTimer.remove(false);
+        this.spawnTimer = this.time.addEvent({
+            delay: this.spawnDelay,
+            loop: true,
+            callback: () => {
+                for (let i = 0; i < this.spawnBurst; i++) {
+                    this.spawnRandomVirus(['red', 'blue', 'green', 'purple']);
+                }
             }
         });
     }
+
+
+
+    onBulletHitsVirus(bullet, virus) {
+        if (bullet.body) {
+            bullet.disableBody(true, true);
+        } else {
+            bullet.setActive(false).setVisible(false);
+        }
+
+        if (virus.body) {
+            virus.disableBody(true, true);
+        } else {
+            virus.setActive(false).setVisible(false);
+        }
+
+        // score bijhouden
+        this.score += 10;
+        this.scoreText.setText('Score: ' + this.score);;
+        // this.sound.play('hit_sfx');
+    }
+
 
 
     update() {
@@ -85,63 +164,95 @@ class MainScene extends Phaser.Scene {
         }
 
         this.player.y = this.sys.game.config.height - 100;
+
+        // check of een virus onderaan het scherm is gekomen
+        this.viruses.children.iterate((virus) => {
+            if (virus.active && virus.y > this.sys.game.config.height) {
+                virus.disableBody(true, true);
+                this.loseLife();
+            }
+        });
     }
 
 
+    loseLife() {
+        this.lives -= 1;
+        this.livesText.setText('Lives: ' + this.lives);
+
+        // als je geen levens meer hebt, herstart de scene
+        if (this.lives <= 0) {
+            this.scene.restart();
+        }
+    }
+
+
+    // hier zorgt hij dat een kogel wordt afgevuurd
     shoot() {
-        const bullet = this.bullets.get(this.player.x, this.player.y - 20, 'bullet'); // key hier meegeven mag ook
+        const startX = this.player.x;
+        const startY = this.player.y - 20;
+
+        const bullet = this.bullets.get(startX, startY, 'bullet');
         if (!bullet) return;
 
         bullet.setActive(true).setVisible(true);
-        bullet.body.setAllowGravity(false);
-        bullet.setVelocityY(-300);
+
+        if (bullet.body) {
+            bullet.body.enable = true;
+            bullet.body.reset(startX, startY);
+            bullet.body.setAllowGravity(false);
+        } else {
+            this.physics.world.enable(bullet);
+            bullet.body.reset(startX, startY);
+            bullet.body.setAllowGravity(false);
+        }
 
         bullet.setScale(0.05);
-        // hier draai ik de kogel dat hij naar boven wijst
         bullet.setAngle(270);
-
+        bullet.setVelocityY(-300);
+        bullet.setCollideWorldBounds(true);
         bullet.body.onWorldBounds = true;
     }
+
+
 
     // hier maakt hij de kogels aan
     createBullets() {
         this.bullets = this.physics.add.group({
             defaultKey: 'bullet',
+            maxSize: 50,
+            allowGravity: false
         });
-    }
 
-    // hier maakt hij de speler aan
-    createPlayer() {
-        // hoogte van je canvas opvragen
-        const gameHeight = this.sys.game.config.height;
-        // speler onderaan zetten, maar 50px van de onderkant af
-        const gameWidth = this.sys.game.config.width;
-        // zorg dat je altijd in het midden spawnt, 50px van de onderkant
-        this.player = this.physics.add.sprite(gameWidth * 0.5, gameHeight - 100, 'firewall').setScale(0.1);
-        // mag niet buiten het scherm bewegen
-        this.player.setCollideWorldBounds(true);
-    }
-
-    remove() {
+        // alle kogels die uit het beeld gaan verwijderen
         this.physics.world.on('worldbounds', (body) => {
             const go = body.gameObject;
             if (go && go.texture && go.texture.key === 'bullet') {
-                this.bullets.killAndHide(go); // terug in de pool
-                body.enable = false;          // physics uit
+                this.bullets.killAndHide(go);
+                body.enable = false;
             }
         });
     }
+
+
+    // hier maakt hij de speler aan
+    createPlayer() {
+        const gameHeight = this.sys.game.config.height;
+        const gameWidth = this.sys.game.config.width;
+        this.player = this.physics.add.sprite(gameWidth * 0.5, gameHeight - 100, 'firewall').setScale(0.1);
+        this.player.setCollideWorldBounds(true);
+    }
+
 }
 
 const config = {
-    type: Phaser.AUTO,         // kiest WebGL of Canvas
+    type: Phaser.AUTO,
     width: 800,
     height: 600,
     physics: {
-        default: 'arcade',       // simpele physics engine
+        default: 'arcade',
         arcade: { gravity: { y: 300 }, debug: false }
     },
-    scene: [MainScene]         // welke scene(s) je wilt draaien
+    scene: [MainScene]
 };
 
 const game = new Phaser.Game(config);
