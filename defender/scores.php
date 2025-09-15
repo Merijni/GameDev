@@ -4,7 +4,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-$dbPath = __DIR__ . '/../storage/scores.sqlite';
+$dbPath = __DIR__ . '/storage/scores.sqlite';
 $dsn = 'sqlite:' . $dbPath;
 
 try {
