@@ -32,6 +32,9 @@ export default class Virus extends Phaser.Physics.Arcade.Sprite {
       this.baseSpeed = r(30, 100);
     }
 
+    // ✅ belangrijk: body opnieuw schalen na setScale
+    this.body.setSize(this.width * this.scaleX, this.height * this.scaleY, true);
+
     // multiplier die door de scene aangepast wordt
     this.speedMultiplier = 1;
   }
