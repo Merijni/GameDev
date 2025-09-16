@@ -157,7 +157,7 @@
 
     <div class="input-row">
       <input class="name-input" id="nameInput" type="text" placeholder="Vul je naam in" aria-label="Naam invoerveld" />
-      <span id="nameError" style="display:none;color:#ff9a9a;font-weight:600;">Vul een naam in (max 24 tekens)</span>
+      <span id="nameError" style="display:none;color:#ff9a9a;font-weight:600;">Vul een naam in (max 10 tekens)</span>
       <button class="btn" type="button" id="playBtn" disabled>Play</button>
     </div>
   </div>
@@ -216,7 +216,7 @@
     const nameError = document.getElementById('nameError');
 
     // Prefill uit localStorage
-    const savedName = (localStorage.getItem('player_name') || '').slice(0, 24);
+    const savedName = (localStorage.getItem('player_name') || '').slice(0, 10);
     if (savedName) {
       nameInput.value = savedName;
       playBtn.disabled = false;
@@ -225,7 +225,7 @@
 
     function validateName() {
       const v = nameInput.value.trim();
-      const valid = v.length > 0 && v.length <= 24;
+      const valid = v.length > 0 && v.length <= 10;
       playBtn.disabled = !valid;
       nameError.style.display = valid ? 'none' : 'block';
       return valid;
