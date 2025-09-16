@@ -17,6 +17,9 @@ class MainScene extends Phaser.Scene {
         this.load.image('virus_blue', 'assets/virus_blue.png');
         this.load.image('virus_green', 'assets/virus_green.png');
         this.load.image('virus_purple', 'assets/virus_purple.png');
+        this.load.audio('laser', 'assets/laser-gun.mp3');
+        this.load.audio('serverHit', 'assets/server-hit.mp3');
+
     }
 
     create() {
@@ -24,6 +27,10 @@ class MainScene extends Phaser.Scene {
         this.createPlayer();
         this.createBullets();
 
+        this.sfx = {
+            laser: this.sound.add('laser', { volume: 0.6 }), // volume kun je zelf instellen
+            serverHit: this.sound.add('serverHit', { volume: 0.6 })
+        };
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.viruses = this.physics.add.group({ runChildUpdate: true });
@@ -169,9 +176,9 @@ class MainScene extends Phaser.Scene {
 
     // ✅ HIER je aangepaste loseLife met redirect naar index.html
     loseLife() {
+        this.sfx.serverHit.play();
         this.lives -= 1;
         this.livesText.setText('Lives: ' + this.lives);
-
         if (this.lives <= 0 && !this.gameOver) {
             this.gameOver = true;               // voorkomt dubbele submits
             this.physics.pause();               // alles stilzetten
@@ -213,7 +220,10 @@ class MainScene extends Phaser.Scene {
         bullet.setVelocityY(-300);
         bullet.setCollideWorldBounds(true);
         bullet.body.onWorldBounds = true;
+
+        this.sfx.laser.play();
     }
+
 
     // hier maakt hij de kogels aan
     createBullets() {
@@ -243,19 +253,19 @@ class MainScene extends Phaser.Scene {
 }
 
 const config = {
-  type: Phaser.AUTO,
-  parent: 'gameMount',
-  width: 960,   // 👈 breder dan 800
-  height: 600,  // hoogte hetzelfde
-  scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
-  },
-  physics: {
-    default: 'arcade',
-    arcade: { gravity: { y: 300 }, debug: false }
-  },
-  scene: [MainScene]
+    type: Phaser.AUTO,
+    parent: 'gameMount',
+    width: 960,   // 👈 breder dan 800
+    height: 600,  // hoogte hetzelfde
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    physics: {
+        default: 'arcade',
+        arcade: { gravity: { y: 300 }, debug: false }
+    },
+    scene: [MainScene]
 };
 
 
