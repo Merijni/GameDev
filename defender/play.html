@@ -1,32 +1,201 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Document</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hack Attack — Play</title>
 
-  <!-- Phaser als global (mag gewoon zo) -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
 
-  <!-- JOUW game als module (belangrijk!) -->
-  <script type="module" src="game.js"></script>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #0e1730;
+      --cyan: #27e0ff;
+      --green: #28ff76;
+      --text: #e8f3ff;
+      --muted: #8aa0c2;
+      --line: #1f2b4d;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 600px at 50% 20%, #0f1b3a 0%, var(--bg) 50%, #050814 100%);
+      display: grid;
+      place-items: center;
+    }
+
+    .frame {
+      width: min(96vw, 980px);
+      padding: 24px 24px 28px;
+      background: linear-gradient(180deg, rgba(19, 32, 66, .65), rgba(10, 16, 34, .85));
+      border-radius: 16px;
+      position: relative;
+      box-shadow: 0 0 0 1px rgba(39, 224, 255, .18) inset, 0 0 35px rgba(39, 224, 255, .15);
+    }
+
+    .frame::before {
+      content: "";
+      position: absolute;
+      inset: -10px;
+      border-radius: 20px;
+      background:
+        linear-gradient(90deg, transparent, rgba(39, 224, 255, .25), transparent) top/100% 2px no-repeat,
+        linear-gradient(90deg, transparent, rgba(39, 224, 255, .25), transparent) bottom/100% 2px no-repeat,
+        linear-gradient(180deg, transparent, rgba(39, 224, 255, .18), transparent) left/2px 100% no-repeat,
+        linear-gradient(180deg, transparent, rgba(39, 224, 255, .18), transparent) right/2px 100% no-repeat;
+      filter: drop-shadow(0 0 18px rgba(39, 224, 255, .35));
+      pointer-events: none;
+    }
+
+    .title {
+      text-align: center;
+      font-weight: 800;
+      letter-spacing: 2px;
+      margin: 2px 0 18px;
+      font-size: 28px;
+      color: var(--cyan);
+      text-shadow: 0 0 14px rgba(39, 224, 255, .7), 0 0 30px rgba(39, 224, 255, .35);
+    }
+
+    .topbar {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .btn {
+      display: inline-grid;
+      place-items: center;
+      height: 40px;
+      min-width: 110px;
+      padding: 0 18px;
+      font-weight: 700;
+      letter-spacing: .3px;
+      color: #001b0a;
+      background: radial-gradient(120% 160% at 50% -10%, #76ffc1, var(--green));
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(40, 255, 118, .25), 0 0 18px rgba(40, 255, 118, .35) inset;
+      transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+    }
+
+    .btn:hover {
+      filter: saturate(110%);
+      box-shadow: 0 10px 26px rgba(40, 255, 118, .35), 0 0 22px rgba(40, 255, 118, .45) inset;
+    }
+
+    .btn:active {
+      transform: translateY(1px) scale(.99);
+    }
+
+    /* Game-container met neon rand */
+    .game-wrap {
+      position: relative;
+      border: 1px solid rgba(39, 224, 255, .2);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(10, 18, 38, .7), rgba(7, 12, 26, .8));
+      box-shadow: 0 0 18px rgba(39, 224, 255, .12) inset;
+      padding: 0;
+      /* ← geen padding: geen gap */
+      display: inline-block;
+      width: 100%;
+    }
+
+    .game-wrap::after {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border-radius: 16px;
+      background:
+        linear-gradient(90deg, transparent, rgba(39, 224, 255, .2), transparent) top/100% 2px no-repeat,
+        linear-gradient(90deg, transparent, rgba(39, 224, 255, .2), transparent) bottom/100% 2px no-repeat,
+        linear-gradient(180deg, transparent, rgba(39, 224, 255, .15), transparent) left/2px 100% no-repeat,
+        linear-gradient(180deg, transparent, rgba(39, 224, 255, .15), transparent) right/2px 100% no-repeat;
+      pointer-events: none;
+      filter: drop-shadow(0 0 14px rgba(39, 224, 255, .3));
+    }
+
+    /* Mount waar Phaser in rendert — responsief en iets wijder (16:10) */
+    #gameMount {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      /* → breder speelveld */
+      display: grid;
+      place-items: center;
+      background: radial-gradient(960px 520px at 50% 30%, #0f1b3a 0%, #0b1020 60%, #050814 100%);
+      border-radius: 12px 12px 0 0;
+      /* boven afgerond; onder recht voor naad met banner */
+      overflow: hidden;
+    }
+
+    /* Canvas vult mount exact */
+    canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* Banner direct onder het speelveld, dunne balk */
+    .server-banner {
+      display: block;
+      width: 100%;
+      height: 72px;
+      /* ← vaste (kleine) hoogte */
+      object-fit: cover;
+      /* snijdt indien nodig, zodat hij dun blijft */
+      margin: 0;
+      /* geen ruimte ertussen */
+      border-radius: 0 0 12px 12px;
+      vertical-align: top;
+      /* voorkomt 1px baseline-gap */
+    }
+
+    /* (optioneel) als je de banner iéts dunner wilt: height: 56px; of 64px */
+  </style>
 </head>
+
 <body>
-  <script>async function submitScore(name, score) {
-  const payload = {
-    name: (name || 'Anon').slice(0, 24),
-    score: Math.max(0, score|0),
-  };
-  try {
-    await fetch('/scores.php', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload),
-    });
-  } catch (e) {
-    console.error('Score submit failed:', e);
-  }
-}
-</script>
+  <div class="frame">
+    <h1 class="title">HACK ATTACK</h1>
+
+    <div class="topbar">
+      <button class="btn" onclick="window.location.href='index.html'">⟵ Terug</button>
+      <div style="opacity:.9; font-weight:700; color:var(--muted)">Bescherm de server. Schiet de virussen neer.</div>
+      <div style="width:110px"></div>
+    </div>
+
+    <div class="game-wrap">
+      <div id="gameMount" aria-label="Spelcanvas"></div>
+      <img class="server-banner" src="assets/server.png" alt="Server" />
+    </div>
+  </div>
+
+  <script>
+    async function submitScore(name, score) {
+      const payload = { name: (name || 'Anon').slice(0, 24), score: Math.max(0, score | 0) };
+      try { await fetch('/scores.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); }
+      catch (e) { console.error('Score submit failed:', e); }
+    }
+  </script>
+
+  <!-- Zorg in game.js voor parent + FIT en een bredere virtuele resolutie (bijv. 960×600) -->
+  <script type="module" src="game.js"></script>
 </body>
+
 </html>

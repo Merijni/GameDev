@@ -243,14 +243,21 @@ class MainScene extends Phaser.Scene {
 }
 
 const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    physics: {
-        default: 'arcade',
-        arcade: { gravity: { y: 300 }, debug: false }
-    },
-    scene: [MainScene]
+  type: Phaser.AUTO,
+  parent: 'gameMount',
+  width: 960,   // 👈 breder dan 800
+  height: 600,  // hoogte hetzelfde
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH
+  },
+  physics: {
+    default: 'arcade',
+    arcade: { gravity: { y: 300 }, debug: false }
+  },
+  scene: [MainScene]
 };
+
+
 
 const game = new Phaser.Game(config);

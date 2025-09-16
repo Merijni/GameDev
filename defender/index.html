@@ -246,7 +246,7 @@
     });
 
     function startGame() {
-      const name = nameInput.value.trim().slice(0, 24);
+      const name = nameInput.value.trim().slice(0, 10);
       localStorage.setItem('player_name', name);
       window.location.href = 'play.html';
     }
