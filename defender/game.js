@@ -152,9 +152,9 @@ class MainScene extends Phaser.Scene {
         this.player.setVelocityY(0);
 
         if (this.cursors.left.isDown || this.keys.A.isDown) {
-            this.player.setVelocityX(-160);
+            this.player.setVelocityX(-300);
         } else if (this.cursors.right.isDown || this.keys.D.isDown) {
-            this.player.setVelocityX(160);
+            this.player.setVelocityX(300);
         } else {
             this.player.setVelocityX(0);
         }
