@@ -86,7 +86,6 @@ class MainScene extends Phaser.Scene {
             callback: () => this.levelUp()
         });
 
-        // ✅ HIER de game-over guard zetten
         this.gameOver = false;
     }
 
@@ -174,7 +173,6 @@ class MainScene extends Phaser.Scene {
         });
     }
 
-    // ✅ HIER je aangepaste loseLife met redirect naar index.html
     loseLife() {
         this.sfx.serverHit.play();
         this.lives -= 1;
@@ -255,7 +253,7 @@ class MainScene extends Phaser.Scene {
 const config = {
     type: Phaser.AUTO,
     parent: 'gameMount',
-    width: 960,   // 👈 breder dan 800
+    width: 960,
     height: 600,  // hoogte hetzelfde
     scale: {
         mode: Phaser.Scale.FIT,
